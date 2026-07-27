@@ -69,7 +69,7 @@ def make_dataset(noisy_dir, clean_dir, batch_size=4, max_len=MAX_AUDIO_LEN, shuf
     print(f"  Found {len(noisy_files)} audio pairs in dataset.")
 
     noisy_paths = tf.constant(noisy_files)
-    clean_paths = tf.constant(clean_files)
+    
 
     path_dataset = tf.data.Dataset.from_tensor_slices((noisy_paths, clean_paths))
 
