@@ -3,7 +3,7 @@ Inference script: enhance a single noisy audio file.
 
 Loads the trained U-Net weights, runs the full enhancement pipeline, saves
 the enhanced audio, prints quality metrics (if a clean reference is given),
-and generates spectrogram comparison plots.
+and generates spectrogram comparison plots
 
 Usage:
     # Enhance only (no metrics)
