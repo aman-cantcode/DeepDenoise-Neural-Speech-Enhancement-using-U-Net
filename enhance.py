@@ -29,7 +29,7 @@ from model.unet          import build_unet
 from audio.stft_utils    import wav_to_mag_phase, mag_phase_to_wav
 from evaluation.metrics  import calculate_metrics
 
-WEIGHTS_PATH = "models/unet_tf_weights.weights.h5"
+WEIGHTS_PATH = "weights/unet_tf_weights.weights.h5"
 SAMPLE_RATE  = 16000
 
 
@@ -195,9 +195,9 @@ def main():
     enhanced = enhance(model, noisy)
 
     # ── Save output ───────────────────────────────────────────────────────────
-    # ── Create results folder: <input_dir>/results/<filename>/ ────────────────
+    # ── All results go into outputs/enhanced/<filename>/ ───────────────────────
     stem        = os.path.splitext(os.path.basename(args.input))[0]
-    results_dir = os.path.join(os.path.dirname(os.path.abspath(args.input)), "results", stem)
+    results_dir = os.path.join("outputs", "enhanced", stem)
     os.makedirs(results_dir, exist_ok=True)
     sf.write(os.path.join(results_dir, "enhanced.wav"), enhanced, sr)
     print(f"  Results → {results_dir}/")

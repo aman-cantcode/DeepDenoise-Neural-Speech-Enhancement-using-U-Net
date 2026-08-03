@@ -25,11 +25,11 @@ from model.unet         import build_unet
 from audio.stft_utils   import wav_to_mag_phase, mag_phase_to_wav
 from evaluation.metrics import calculate_metrics
 
-WEIGHTS_PATH   = "models/unet_tf_weights.weights.h5"
-TEST_CLEAN_DIR = "test_set/clean"
-TEST_NOISY_DIR = "test_set/noisy"
+WEIGHTS_PATH   = "weights/unet_tf_weights.weights.h5"
+TEST_CLEAN_DIR = "dataset/test/clean"
+TEST_NOISY_DIR = "dataset/test/noisy"
 SAMPLE_RATE    = 16000
-RESULTS_DIR    = "test_set/results"
+RESULTS_DIR    = "outputs"
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ def evaluate():
         plot_improvement_per_file(noisy_scores, enhanced_scores, metric, charts_dir)
         plot_improvement_histogram(noisy_scores, enhanced_scores, metric, charts_dir)
 
-    report_path = os.path.join(RESULTS_DIR, "metrics_report.txt")
+    report_path = os.path.join(RESULTS_DIR, "reports", "metrics_report.txt")
     with open(report_path, "w") as f:
         for metric in ["STOI", "PESQ", "SNR"]:
             n_mean = np.mean(noisy_scores[metric])

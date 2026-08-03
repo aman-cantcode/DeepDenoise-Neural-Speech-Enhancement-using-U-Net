@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Generated outputs — disposable
+outputs/*
+!outputs/**/.gitkeep
+
+# Training data — too large
+dataset/train/noisy/*
+dataset/train/clean/*
+dataset/test/noisy/*
+dataset/test/clean/*
+!dataset/**/.gitkeep
+
+
+!weights/*.weights.h5
+
+
+LEARN

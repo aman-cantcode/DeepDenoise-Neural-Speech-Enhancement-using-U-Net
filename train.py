@@ -29,17 +29,17 @@ from data.dataset     import make_dataset
 
 
 # ── Hyperparameters ───────────────────────────────────────────────────────────
-NOISY_DIR            = "data/noisy_4s"
-CLEAN_DIR            = "data/clean_4s"
+NOISY_DIR            = "dataset/train/noisy"
+CLEAN_DIR            = "dataset/train/clean"
 BATCH_SIZE           = 4
 LEARNING_RATE        = 1e-4
 NUM_EPOCHS           = 30
 CHECKPOINT_INTERVAL  = 5        # save weights every N epochs
 GRADIENT_CLIP_NORM   = 1.0
-WEIGHTS_DIR          = "models"
+WEIGHTS_DIR          = "weights"
 
 # Set to a .h5 path to resume training from a checkpoint, otherwise None
-RESUME_FROM          = "/home/aman/Projects/speech_enhancement/models/unet_tf_weights.weights.h5"     # e.g. "models/checkpoint_epoch_15.h5"
+RESUME_FROM          = "weights/unet_tf_weights.weights.h5"     # e.g. "models/checkpoint_epoch_15.h5"
 
 
 # ── Training step ─────────────────────────────────────────────────────────────

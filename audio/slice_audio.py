@@ -86,8 +86,8 @@ def slice_audio(
 
 if __name__ == "__main__":
     slice_audio(
-        input_clean_dir="data/raw/clean",
-        input_noisy_dir="data/raw/noisy",
-        output_clean_dir="data/clean_4s",
-        output_noisy_dir="data/noisy_4s",
+        input_clean_dir="dataset/raw/clean",
+        input_noisy_dir="dataset/raw/noisy",
+        output_clean_dir="dataset/train/clean",
+        output_noisy_dir="dataset/train/noisy",
     )
