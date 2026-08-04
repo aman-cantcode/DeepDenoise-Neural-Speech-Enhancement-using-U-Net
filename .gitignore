@@ -12,6 +12,8 @@ dataset/train/noisy/*
 dataset/train/clean/*
 dataset/test/noisy/*
 dataset/test/clean/*
+dataset/raw/noisy/*
+dataset/raw/clean/*
 !dataset/**/.gitkeep
 
 
