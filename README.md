@@ -1,200 +1,184 @@
-# Speech Enhancement using U-Net
+<div align="center">
 
-A deep learning system that removes background noise from speech recordings using a U-Net convolutional neural network operating in the frequency domain.
+# DeepDenoise
 
----
+### Neural Speech Enhancement using U-Net
 
-## Problem Statement
+*A deep convolutional network that removes background noise from speech recordings — built and trained entirely from scratch*
 
-When speech is recorded in real environments — offices, streets, cafes — background noise degrades intelligibility and quality. Traditional noise suppression (spectral subtraction, Wiener filtering) works well for stationary noise but struggles with dynamic, unpredictable real-world noise. This project uses a data-driven U-Net that learns what clean speech looks like and predicts it directly from a noisy spectrogram.
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange.svg)](https://www.tensorflow.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
----
-
-## How does this Speech Enhancement System work?
-
-The pipeline has three stages:
-
-**1. Analysis (Waveform → Spectrogram)**
-The raw waveform is converted into a 2D magnitude spectrogram using the Short-Time Fourier Transform (STFT). Think of it like a musical score — one axis is frequency (which note), the other is time (when). The model works on this 2D image rather than the raw waveform. The phase (timing information) is saved separately for later reconstruction.
-
-**2. Enhancement (U-Net)**
-The noisy magnitude spectrogram is fed into a U-Net, which was originally designed for medical image segmentation but works equally well for "cleaning" spectrograms. The network learns to distinguish speech energy patterns from noise patterns and outputs a predicted clean magnitude.
-
-**3. Synthesis (Spectrogram → Waveform)**
-The enhanced magnitude is combined with the original phase using the formula `complex = magnitude × e^(j × phase)`. Inverting the STFT (ISTFT) converts this back to a clean waveform.
+</div>
 
 ---
 
-## Model Architecture
+## Highlights
 
-The U-Net follows an encoder–bottleneck–decoder structure:
+- **U-Net architecture** designed and implemented from scratch in TensorFlow/Keras — no pretrained backbones
+- **Trained on 60 GB** of paired noisy/clean speech across three benchmark corpora
+- **PESQ improved by +0.74** and **SNR by +4.81 dB** on held-out test data
+- **Full signal-processing pipeline** — STFT analysis, spectrogram-domain enhancement, ISTFT synthesis
+- **Systematic Engineering Workflow** — modular codebase, custom training loop, automated batch evaluation with quantitative reporting
+
+---
+
+## Overview
+
+DeepDenoise treats speech enhancement as an **image-to-image translation problem**. Instead of processing raw audio, it converts speech into a time-frequency spectrogram — a 2D representation where speech and noise occupy visually distinct patterns — and applies a U-Net to reconstruct the clean version, mirroring the same architecture used in state-of-the-art medical image segmentation.
 
 ```
-Input [B, 257, 501, 1]
-│
-├─ Encoder Block 1:  Conv→BN→ReLU × 2  (1  → 16 ch)  + MaxPool  → [B, 128, 250, 16]
-├─ Encoder Block 2:  Conv→BN→ReLU × 2  (16 → 32 ch)  + MaxPool  → [B, 64,  125, 32]
-├─ Encoder Block 3:  Conv→BN→ReLU × 2  (32 → 64 ch)  + MaxPool  → [B, 32,  62,  64]
-├─ Encoder Block 4:  Conv→BN→ReLU × 2  (64 → 128 ch) + MaxPool  → [B, 16,  31,  128]
-│
-├─ Bottleneck:       Conv→BN→ReLU × 2  (128 → 256 ch)
-│
-├─ Decoder Block 4:  Upsample + concat(skip) → Conv×2  (256 → 128 ch)
-├─ Decoder Block 3:  Upsample + concat(skip) → Conv×2  (128 → 64 ch)
-├─ Decoder Block 2:  Upsample + concat(skip) → Conv×2  (64  → 32 ch)
-├─ Decoder Block 1:  Upsample + concat(skip) → Conv×2  (32  → 16 ch)
-│
-└─ Output Conv 1×1:  (16 → 1 ch)
-   Output [B, 257, 501, 1]
+Noisy Audio → STFT → Magnitude Spectrogram → U-Net → Enhanced Spectrogram → ISTFT → Clean Audio
 ```
-
-**Skip connections** concatenate encoder feature maps directly into the matching decoder stage. This preserves fine-grained frequency detail that would otherwise be lost in the pooling layers — the same reason U-Nets succeed at image segmentation.
-
-**Total parameters:** ~7.7 million
-
----
-
-## Dataset
-
-Training used the [DNS Challenge dataset](https://github.com/microsoft/DNS-Challenge) (Microsoft Deep Noise Suppression). Long recordings are sliced into 4-second segments at 16 kHz.
-
-- **Training:** ~100,000 noisy/clean pairs (~5 GB after slicing)
-- **Test set:** 30 held-out pairs not seen during training
-- **Sample rate:** 16,000 Hz
-- **Clip length:** 4 seconds (64,000 samples)
 
 ---
 
 ## Results
 
-| Metric | Noisy (before) | Enhanced (after) | Improvement |
-|--------|---------------|-----------------|-------------|
-| STOI   | 0.74          | 0.86            | +0.12       |
-| PESQ   | 1.82          | 2.65            | +0.83       |
-| SNR    | 8.3 dB        | 16.7 dB         | +8.4 dB     |
+<div align="center">
+
+| Metric | Noisy Baseline | Enhanced Output | Δ Improvement |
+|:------:|:--------------:|:----------------:|:--------------:|
+| **STOI** — Intelligibility | 0.8683 | **0.9210** | +0.0527 |
+| **PESQ** — Perceptual Quality | 1.4961 | **2.2395** | +0.7434 |
+| **SNR (dB)** — Noise Reduction | 6.93 | **11.73** | +4.81 dB |
+
+</div>
 
 ---
 
-## Folder Structure
+## Architecture
+
+A U-Net encoder–decoder with 4 skip connections, operating on log-magnitude spectrograms — engineered to balance global noise context with fine-grained frequency detail.
 
 ```
-speech_enhancement/
+Input [257 × 501 × 1]
 │
-├── model/
-│   └── unet.py              # U-Net architecture (TensorFlow/Keras)
+├─ Encoder 1 → 16 ch ─┐
+├─ Encoder 2 → 32 ch ─┼─┐
+├─ Encoder 3 → 64 ch ─┼─┼─┐
+├─ Encoder 4 → 128 ch ─┼─┼─┼─┐
+│ │ │ │ │
+├─ Bottleneck → 256 ch │ │ │ │
+│ │ │ │ │
+├─ Decoder 4 → 128 ch ←─┘ │ │ │ skip connection
+├─ Decoder 3 → 64 ch ←───┘ │ │
+├─ Decoder 2 → 32 ch ←─────┘ │
+├─ Decoder 1 → 16 ch ←───────┘
 │
+└─ Output Conv (1×1) → 1 ch
+Output [256 × 496 × 1]
+```
+
+<div align="center">
+
+| Component | Detail |
+|---|---|
+| **Parameters** | ~1.9 million |
+| **Loss Function** | L1 (Mean Absolute Error) — chosen over MSE to preserve spectral sharpness |
+| **Optimizer** | Adam, lr = 1e-4, gradient clipping at global norm 1.0 |
+| **Regularization** | BatchNorm after every convolution |
+| **Skip Connections** | 4 — preserve high-resolution frequency detail lost during pooling |
+
+</div>
+
+<details>
+<summary><b>Why U-Net for audio?</b></summary>
+<br>
+
+Speech enhancement in the spectrogram domain is structurally identical to image segmentation: given a corrupted 2D input, reconstruct a clean version while preserving spatial detail. The encoder learns global noise/speech separation patterns; skip connections give the decoder direct access to high-resolution encoder features that pooling would otherwise permanently discard — critical for reconstructing the fine harmonic structure of speech.
+</details>
+
+---
+
+## Dataset
+
+<div align="center">
+
+| Source | Contribution |
+|--------|--------------|
+| **VoiceBank-DEMAND** | Paired clean/noisy speech recordings |
+| **LibriSpeech** | Additional clean speech for diversity |
+| **MUSAN** | Real-world noise — babble, ambient, music |
+
+**~60 GB** combined · resampled to 16 kHz mono · sliced into 4-second training segments
+
+</div>
+
+---
+
+## Engineering Highlights
+
+- **Custom `tf.data` pipeline** with parallel audio loading and prefetching — eliminates GPU idle time during training
+- **Manual training loop** with `GradientTape`, wrapped in `@tf.function` for graph-mode compilation speedup
+- **Gradient clipping** to prevent instability from large-magnitude gradient spikes
+- **Checkpointing** every 5 epochs, enabling training resumption without loss of progress
+- **Quantitative evaluation harness** — automated STOI/PESQ/SNR scoring with comparison charts across the full test set
+
+---
+
+## Project Structure
+
+```
+DeepDenoise/
+├── model/unet.py U-Net architecture
 ├── audio/
-│   ├── stft_utils.py        # STFT ↔ waveform conversion
-│   └── slice_audio.py       # Slice long recordings into 4s clips
+│ ├── stft_utils.py STFT ↔ waveform conversion
+│ └── slice_audio.py Slice long recordings into 4s clips
+├── data/dataset.py tf.data training pipeline
+├── evaluation/metrics.py STOI, PESQ, SNR
 │
-├── data/
-│   └── dataset.py           # tf.data pipeline
+├── weights/ Trained model weights
+├── dataset/ Training & test audio (not tracked in git)
+│ ├── train/{clean,noisy}/
+│ └── test/{clean,noisy}/
+├── samples/ Demo audio for quick testing
+├── outputs/ Generated results (enhanced audio, charts, reports)
 │
-├── evaluation/
-│   └── metrics.py           # STOI, PESQ, SNR
-│
-├── weights/
-│   └── convert_weights.py   # Convert PyTorch .pt → TensorFlow .h5
-│
-├── models/
-│   ├── unet_final_continued.pt   # Original PyTorch checkpoint (DO NOT MODIFY)
-│   └── unet_tf_weights.h5        # Converted TF weights (generated by convert_weights.py)
-│
-├── test_audio/
-│   ├── noisy.wav            # Example noisy input
-│   └── enhanced.wav         # Model output (generated by enhance.py)
-│
-├── test_set/
-│   ├── clean/               # Clean reference files for evaluation
-│   └── noisy/               # Noisy input files for evaluation
-│
-├── train.py                 # Training script
-├── enhance.py               # Inference: enhance a single file
-├── evaluate.py              # Batch evaluation on test_set/
-├── requirements.txt
-├── README.md
-└── INTERVIEW_GUIDE.md
+├── train.py Train the model
+├── enhance.py Enhance a single file
+├── evaluate.py Batch evaluation with metrics + charts
+└── requirements.txt
 ```
 
 ---
 
-## Installation
+## Quick Start
 
 ```bash
-# Clone or download the project
-cd speech_enhancement
+git clone https://github.com/aman-cantcode/DeepDenoise-Neural_Speech_Enhancement.git
+cd DeepDenoise-Neural-Speech-Enhancement-using-U-Net
 
-# Create a virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-
-# Install dependencies
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
----
-
-## Usage
-
-### Step 0 — Prepare data (skip if using provided test files)
-
+**Enhance a file:**
 ```bash
-python audio/slice_audio.py
+python enhance.py --input samples/noisy_demo.wav
 ```
 
-Reads from `data/raw/clean/` and `data/raw/noisy/`, writes 4-second segments to `data/clean_4s/` and `data/noisy_4s/`.
-
-### Step 1 — Convert weights (one-time setup)
-
+**With a clean reference (adds STOI/PESQ/SNR scores):**
 ```bash
-# Install PyTorch (CPU-only is enough for conversion)
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-python weights/convert_weights.py
-# → models/unet_tf_weights.h5
+python enhance.py --input samples/noisy_demo.wav --clean samples/clean_demo.wav
 ```
 
-### Step 2 — Enhance a file
-
+**Batch evaluation:**
 ```bash
-# Enhance only
-python enhance.py --input test_audio/noisy.wav --output test_audio/enhanced.wav
-
-# Enhance + compute metrics
-python enhance.py --input  test_audio/noisy.wav \
-                  --output test_audio/enhanced.wav \
-                  --clean  test_audio/clean.wav
-```
-
-### Step 3 — Batch evaluation
-
-```bash
+# place files in dataset/test/clean/ and dataset/test/noisy/
 python evaluate.py
 ```
 
-Reads `test_set/clean/` and `test_set/noisy/`, prints per-file and average STOI/PESQ/SNR, saves comparison charts as PNG files.
-
-### Step 4 — Train from scratch (optional)
-
-Edit the paths at the top of `train.py`, then:
-
+**Train from scratch:**
 ```bash
+# place 4-second clips in dataset/train/{clean,noisy}/
 python train.py
-```
-
-To resume from a checkpoint:
-
-```python
-# In train.py, set:
-RESUME_FROM = "models/checkpoint_epoch_15.h5"
 ```
 
 ---
 
-## Future Improvements
+## Tech Stack
 
-- **Perceptual loss:** add a frequency-weighted component to the loss function that penalizes errors in speech-dominant frequency bands more heavily.
-- **Attention gates:** add channel or spatial attention in the decoder to help the model focus on speech-dominant time-frequency regions.
-- **Real-time processing:** replace STFT with a causal (online) STFT and process audio frame-by-frame for live applications.
-- **Multi-speaker training:** expand the dataset to include more diverse speakers and noise conditions to improve generalization.
-- **Post-filter:** apply a simple spectral floor to suppress residual musical noise artefacts.
+`TensorFlow` `Keras` `NumPy` `librosa` `SoundFile` `pystoi` `pesq` `Matplotlib`
+
