@@ -15,7 +15,28 @@ import gradio as gr
 import os
 import tempfile
 
-from enhance import load_model, enhance
+from model.unet       import build_unet
+from audio.stft_utils import wav_to_mag_phase, mag_phase_to_wav
+
+
+def load_model(weights_path):
+    model = build_unet()
+    dummy = tf.zeros([1, 257, 501, 1], dtype=tf.float32)
+    model(dummy, training=False)
+    model.load_weights(weights_path)
+    print(f"  Model loaded from: {weights_path}")
+    return model
+
+
+def enhance(model, noisy_wav):
+    original_len = len(noisy_wav)
+    noisy_tensor = tf.constant(noisy_wav[np.newaxis, :], dtype=tf.float32)
+    mag, phase = wav_to_mag_phase(noisy_tensor)
+    mag_input = tf.expand_dims(mag, axis=-1)
+    enhanced_mag = model(mag_input, training=False)
+    enhanced_mag = tf.squeeze(enhanced_mag, axis=-1)
+    enhanced_wav = mag_phase_to_wav(enhanced_mag, phase, target_len=original_len)
+    return enhanced_wav[0].numpy()
 
 WEIGHTS_PATH = "weights/unet_tf_weights.weights.h5"
 SAMPLE_RATE  = 16000
